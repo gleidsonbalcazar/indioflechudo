@@ -9,7 +9,7 @@
  * Uso:
  *   node --use-system-ca relay-ping.js <senha> [proxyUrl] [relayUrl]
  * Ex.:
- *   node --use-system-ca relay-ping.js gsb2083 http://proxy:8080
+ *   node --use-system-ca relay-ping.js MinhaSenha@2026 http://proxy:8080
  */
 
 const crypto = require('crypto');

@@ -4,42 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>indioflechudo</title>
-<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNSIgZmlsbD0iIzQ3NTU2OSIvPjxyZWN0IHg9IjYiIHk9IjciIHdpZHRoPSIxMiIgaGVpZ2h0PSIyIiByeD0iMSIgZmlsbD0iI2UyZThmMCIvPjxyZWN0IHg9IjYiIHk9IjExIiB3aWR0aD0iMTIiIGhlaWdodD0iMiIgcng9IjEiIGZpbGw9IiNlMmU4ZjAiLz48cmVjdCB4PSI2IiB5PSIxNSIgd2lkdGg9IjgiIGhlaWdodD0iMiIgcng9IjEiIGZpbGw9IiNlMmU4ZjAiLz48L3N2Zz4=">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230a0a0b'/%3E%3Cpath d='M4 12h10' stroke='%23ff5a1f' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M12 7l6 5-6 5' fill='none' stroke='%23ff8c42' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #1a1a2e;
-  --card: #16213e;
-  --sidebar-bg: #111827;
-  --sidebar-item: #1f2937;
-  --sidebar-selected: #0f3460;
-  --input-bg: #0d1117;
-  --text: #e0e0e0;
-  --text-muted: #8b8fa3;
-  --text-dim: #555a6e;
-  --input-bubble: #0f3460;
-  --input-accent: #4cc9f0;
-  --response-bubble: #1b4332;
-  --response-accent: #52b788;
-  --danger: #e74c3c;
-  --border: #2a2d3e;
+  /* ── Tema "Brasa": preto quase absoluto + brasa laranja-vermelho ── */
+  --bg: #0a0a0b;
+  --card: #111113;
+  --sidebar-bg: #0c0c0e;
+  --sidebar-item: #17171a;
+  --sidebar-selected: #241410;
+  --input-bg: #060607;
+  --text: #f2ede4;
+  --text-muted: #8f887c;
+  --text-dim: #565149;
+  --input-bubble: #241410;
+  --input-accent: #ff5a1f;
+  --response-bubble: #12140f;
+  --response-accent: #a3b18a;
+  --danger: #e5484d;
+  --border: #1e1e22;
   --sidebar-w: 280px;
+  --ember: #ff5a1f;
+  --ember-2: #ff8c42;
+  --ember-soft: #3a1a0d;
+  --grad-ember: linear-gradient(135deg, #ff5a1f, #ff8c42);
 }
 body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; }
 
 /* ── Login ── */
 #login-screen { display: flex; align-items: center; justify-content: center; height: 100dvh; }
-.login-box { background: var(--card); padding: 2rem; border-radius: 12px; width: 340px; text-align: center; }
-.login-box h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
-.login-box input { width: 100%; padding: 10px 14px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 1rem; margin-bottom: 1rem; outline: none; }
+#login-screen { background: radial-gradient(1100px 560px at 50% -12%, #1c0d06, #050506); }
+.login-box { background: var(--card); border: 1px solid var(--border); padding: 2.2rem 2rem; border-radius: 16px; width: 360px; text-align: center; box-shadow: 0 24px 80px rgba(255,90,31,.10); }
+.login-box h1 { font-size: 1.5rem; margin-bottom: .25rem; font-weight: 800; letter-spacing: .3px; }
+.login-box h1 b { background: var(--grad-ember); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.login-arrow { color: var(--ember); filter: drop-shadow(0 0 8px rgba(255,90,31,.6)); }
+.login-tag { color: var(--text-muted); font-size: .8rem; letter-spacing: .4px; margin-bottom: 1.6rem; }
+.login-box input { width: 100%; padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 1rem; margin-bottom: 1rem; outline: none; text-align: center; }
 .login-box input:focus { border-color: var(--input-accent); }
-.login-box button { width: 100%; padding: 10px; background: var(--input-accent); color: #000; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+.login-box button { width: 100%; padding: 12px; background: var(--grad-ember); color: #1a0a02; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: opacity .2s; }
 .login-box button:hover { opacity: .85; }
 .login-error { color: var(--danger); font-size: .85rem; margin-top: .5rem; min-height: 1.2em; }
 
 /* ── App shell ── */
 #app { display: none; height: 100dvh; }
-.app-layout { display: flex; height: 100%; }
+.app-layout { display: flex; height: 100%; position: relative; }
+/* Linha de brasa incandescente no topo — assinatura do tema */
+.app-layout::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--grad-ember); z-index: 60; box-shadow: 0 0 16px rgba(255,90,31,.55);
+}
 
 /* ── Sidebar ── */
 .sidebar {
@@ -48,10 +62,13 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
   transition: transform .25s ease; z-index: 50;
 }
 .sidebar-header { padding: 12px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.brand { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; font-weight: 800; letter-spacing: .3px; padding: 2px; }
+.brand b { background: var(--grad-ember); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.brand-arrow { color: var(--ember); filter: drop-shadow(0 0 5px rgba(255,90,31,.7)); }
 .sidebar-top-row { display: flex; gap: 8px; }
 .btn-new-task {
-  flex: 1; padding: 10px; background: var(--input-accent); color: #000; border: none;
-  border-radius: 8px; font-weight: 600; cursor: pointer; font-size: .9rem; transition: opacity .2s;
+  flex: 1; padding: 10px; background: var(--grad-ember); color: #1a0a02; border: none;
+  border-radius: 8px; font-weight: 700; cursor: pointer; font-size: .9rem; transition: opacity .2s;
 }
 .btn-new-task:hover { opacity: .85; }
 .btn-lock {
@@ -169,7 +186,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .msg-meta-top { margin-top: 0; margin-bottom: 4px; }
 .message.response .msg-meta { justify-content: flex-end; }
 .author-chip { display: inline-flex; align-items: center; gap: 3px; font-size: .66rem; font-weight: 700; padding: 1px 7px; border-radius: 10px; white-space: nowrap; }
-.author-chip.claude { background: rgba(76,201,240,.16); color: var(--input-accent); }
+.author-chip.claude { background: rgba(255,90,31,.16); color: var(--input-accent); }
 .author-chip.human { background: rgba(139,143,163,.18); color: var(--text-muted); }
 .meta-time { color: var(--text-dim); }
 .working-bubble { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-style: italic; }
@@ -183,7 +200,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .agent-step .step-tool { font-weight: 600; color: var(--text); }
 .agent-step .step-detail { font-family: ui-monospace, SFMono-Regular, monospace; font-size: .74rem; opacity: .85; word-break: break-all; }
 @keyframes stepin { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-.approval { border: 1px solid var(--input-accent); border-radius: 10px; padding: 10px 12px; background: rgba(76,201,240,.06); }
+.approval { border: 1px solid var(--input-accent); border-radius: 10px; padding: 10px 12px; background: rgba(255,90,31,.06); }
 .approval-title { font-weight: 700; margin-bottom: 4px; font-size: .9rem; }
 .approval-diff { background: rgba(0,0,0,.35); border-radius: 6px; padding: 8px; overflow-x: auto; font-family: ui-monospace, 'SF Mono', monospace; font-size: .8rem; white-space: pre-wrap; word-break: break-word; margin: 6px 0; max-height: 320px; overflow-y: auto; }
 .approval-diff .del { color: #e57373; } .approval-diff .add { color: #81c784; }
@@ -268,7 +285,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 }
 .btn-attach { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--border); }
 .btn-attach:hover { color: var(--text); border-color: var(--text-muted); }
-.btn-send { background: var(--input-accent); color: #000; }
+.btn-send { background: var(--grad-ember); color: #1a0a02; box-shadow: 0 0 12px rgba(255,90,31,.35); }
 .btn-send:hover { opacity: .85; }
 .responder-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: .76rem; color: var(--text-muted); }
 .responder-row .toggle-container { font-size: .74rem; }
@@ -280,7 +297,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .progress-fill { height: 100%; background: var(--input-accent); width: 0%; transition: width .2s; }
 
 #drag-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(26,26,46,.9); z-index: 100;
+  display: none; position: fixed; inset: 0; background: rgba(10,10,11,.92); z-index: 100;
   align-items: center; justify-content: center; font-size: 1.3rem; color: var(--input-accent);
   border: 3px dashed var(--input-accent); margin: 16px; border-radius: 16px;
 }
@@ -299,8 +316,9 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 
 <div id="login-screen">
   <div class="login-box">
-    <h1>indioflechudo</h1>
-    <input type="password" id="pw" placeholder="Password" autocomplete="off">
+    <h1><span class="login-arrow">&#10148;</span> indio<b>flechudo</b></h1>
+    <p class="login-tag">relay pessoal &middot; ponta-a-ponta</p>
+    <input type="password" id="pw" placeholder="Senha" autocomplete="off">
     <button id="login-btn">Entrar</button>
     <div class="login-error" id="login-error"></div>
   </div>
@@ -311,8 +329,9 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
+      <div class="brand"><span class="brand-arrow">&#10148;</span> indio<b>flechudo</b></div>
       <div class="sidebar-top-row">
-        <button class="btn-new-task" id="btn-new-task">+ Nova Task</button>
+        <button class="btn-new-task" id="btn-new-task">&#10148; Nova Task</button>
         <button class="btn-lock" id="btn-lock" title="Bloquear agora">&#128274;</button>
       </div>
       <input class="search-input" id="search-input" placeholder="Buscar tasks...">

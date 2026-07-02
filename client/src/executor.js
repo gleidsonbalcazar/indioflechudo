@@ -12,7 +12,7 @@
  * Uso (na máquina corporativa):
  *   node --use-system-ca executor.js <senha> <repoDir> [proxyUrl] [relayUrl]
  * Ex.:
- *   node --use-system-ca executor.js gsb2083 C:\Gleidson http://proxy:8080
+ *   node --use-system-ca executor.js MinhaSenha@2026 C:\repo http://proxy:8080
  */
 
 const crypto = require('crypto');

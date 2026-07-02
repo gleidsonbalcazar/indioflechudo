@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>indioflechudo — Design C · Marajoara</title>
+<style>
+/* ============================================================
+   DESIGN C — "MARAJOARA"  (barro/terracota sobre preto)
+   Preto quente + terracota/ocre + grafismos geométricos
+   (padrão Marajoara) como textura sutil. Mais cultural,
+   artesanal e "com identidade". Acento âmbar/barro.
+   ============================================================ */
+:root{
+  --bg:#0a0908; --card:#14110d; --sidebar-bg:#0d0b09; --sidebar-item:#1b1712;
+  --sidebar-selected:#231710; --input-bg:#080706; --text:#f0e9dd; --text-muted:#938877;
+  --text-dim:#5c5346; --border:#221d16;
+  --clay:#c65d3b;          /* terracota */
+  --ochre:#e0a04a;         /* ocre */
+  --clay-soft:#2a160e;
+  --response-accent:#8a9a5b;
+  --danger:#d0463b; --sidebar-w:280px;
+  --grad-clay:linear-gradient(135deg,var(--clay),var(--ochre));
+  /* padrão marajoara em SVG (losangos/degraus) */
+  --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cg fill='none' stroke='%23c65d3b' stroke-width='1' opacity='0.25'%3E%3Cpath d='M0 20 L20 0 L40 20 L20 40 Z'/%3E%3Cpath d='M20 12 L28 20 L20 28 L12 20 Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden}
+button{font-family:inherit}
+.app-layout{display:flex;height:100dvh}
+/* ---- sidebar ---- */
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;position:relative}
+.brand{padding:16px 16px 12px;border-bottom:1px solid var(--border);position:relative}
+.brand-mark{font-size:1.1rem;font-weight:800;letter-spacing:.4px}
+.brand-mark b{background:var(--grad-clay);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-sub{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-top:3px}
+/* faixa de grafismo marajoara sob o brand */
+.frieze{height:14px;background-image:var(--pattern);background-size:20px 20px;opacity:.9;border-bottom:1px solid var(--border)}
+.sidebar-header{padding:12px}
+.top-row{display:flex;gap:8px;margin-bottom:10px}
+.btn-new{flex:1;padding:10px;background:var(--grad-clay);color:#1a0d05;border:none;border-radius:8px;font-weight:700;cursor:pointer}
+.btn-lock{width:42px;background:var(--input-bg);border:1px solid var(--border);color:var(--text-muted);border-radius:8px;cursor:pointer}
+.search{width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;outline:none}
+.search:focus{border-color:var(--clay)}
+.task-list{flex:1;overflow-y:auto;padding:6px}
+.task-label{font-size:.66rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--clay);opacity:.7;padding:12px 8px 4px}
+.task-item{padding:10px 12px;border-radius:8px;cursor:pointer;position:relative;margin-bottom:2px}
+.task-item:hover{background:var(--sidebar-item)}
+.task-item.selected{background:var(--sidebar-selected);box-shadow:inset 2px 0 0 var(--clay)}
+.ti-title{font-size:.9rem;font-weight:600}
+.ti-preview{font-size:.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ti-time{font-size:.68rem;color:var(--text-dim);margin-top:3px}
+.badge{position:absolute;top:10px;right:10px;background:var(--grad-clay);color:#1a0d05;font-size:.65rem;font-weight:700;padding:1px 7px;border-radius:10px}
+/* ---- main ---- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.main-header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--border)}
+.title{font-weight:700;font-size:1rem}
+.chip{margin-left:auto;font-size:.7rem;color:var(--response-accent);border:1px solid var(--border);padding:3px 10px;border-radius:20px}
+.h-actions{display:flex;gap:8px}
+.tbtn{background:var(--input-bg);border:1px solid var(--border);color:var(--text-muted);padding:6px 12px;border-radius:8px;font-size:.78rem;cursor:pointer}
+.tbtn.on{border-color:var(--clay);color:var(--ochre)}
+.chat{flex:1;overflow-y:auto;padding:22px 20px;display:flex;flex-direction:column;gap:15px;background-image:var(--pattern);background-size:220px 220px;background-position:center}
+.row{display:flex;flex-direction:column;max-width:70%}
+.row.input{align-self:flex-start}
+.row.response{align-self:flex-end;align-items:flex-end}
+.author{font-size:.68rem;color:var(--text-dim);margin:0 4px 5px}
+.bubble{padding:11px 15px;border-radius:13px;font-size:.9rem;line-height:1.55;white-space:pre-wrap;backdrop-filter:blur(2px)}
+.row.input .bubble{background:#171009;border:1px solid #2c1c10;border-bottom-left-radius:4px}
+.row.response .bubble{background:#12140c;border:1px solid #242a17;border-bottom-right-radius:4px}
+.bubble code{background:#000;padding:1px 5px;border-radius:4px;color:var(--ochre);font-family:ui-monospace,monospace;font-size:.85em}
+/* ---- input area ---- */
+.input-area{border-top:1px solid var(--border);padding:12px 18px;background:var(--card)}
+.io-controls{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.seg{display:flex;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{background:none;border:none;color:var(--text-muted);padding:6px 12px;font-size:.78rem;cursor:pointer}
+.seg button.on{background:var(--clay-soft);color:var(--ochre)}
+.agent{margin-left:auto;background:var(--input-bg);border:1px solid var(--border);color:var(--text-muted);padding:6px 12px;border-radius:8px;font-size:.78rem;cursor:pointer}
+.composer{display:flex;gap:8px;align-items:flex-end}
+.attach{width:42px;height:42px;background:var(--input-bg);border:1px solid var(--border);border-radius:9px;color:var(--text-muted);cursor:pointer;font-size:1.1rem}
+.composer textarea{flex:1;background:var(--input-bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:11px 14px;font-size:.9rem;resize:none;outline:none;font-family:inherit}
+.composer textarea:focus{border-color:var(--clay)}
+.send{width:46px;height:42px;background:var(--grad-clay);border:none;border-radius:9px;color:#1a0d05;font-size:1.15rem;cursor:pointer}
+/* ---- login overlay ---- */
+.login{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:20}
+.login::before{content:"";position:absolute;inset:0;background-image:var(--pattern);background-size:40px 40px;opacity:.5}
+.login[hidden]{display:none}
+.login-box{position:relative;width:360px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:0 0 30px;text-align:center;overflow:hidden}
+.login-box .frieze{height:16px;margin-bottom:24px}
+.login-box .mark{font-size:1.5rem;font-weight:800}
+.login-box .mark b{background:var(--grad-clay);-webkit-background-clip:text;background-clip:text;color:transparent}
+.login-box p{color:var(--text-muted);font-size:.78rem;margin:4px 0 22px;letter-spacing:.5px}
+.login-box .pad{padding:0 28px}
+.login-box input{width:100%;padding:12px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:9px;color:var(--text);margin-bottom:14px;outline:none;text-align:center}
+.login-box input:focus{border-color:var(--clay)}
+.login-box button{width:100%;padding:12px;background:var(--grad-clay);color:#1a0d05;border:none;border-radius:9px;font-weight:700;cursor:pointer}
+.peek{position:fixed;bottom:14px;right:16px;z-index:30;background:var(--card);border:1px solid var(--border);color:var(--text-muted);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:.75rem}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">indio<b>flechudo</b></div>
+      <div class="brand-sub">relay ponta-a-ponta</div>
+    </div>
+    <div class="frieze"></div>
+    <div class="sidebar-header">
+      <div class="top-row">
+        <button class="btn-new">Nova Task</button>
+        <button class="btn-lock">🔒</button>
+      </div>
+      <input class="search" placeholder="Buscar tasks...">
+    </div>
+    <div class="task-list">
+      <div class="task-label">Ativas</div>
+      <div class="task-item selected">
+        <div class="ti-title">Refatorar módulo de faturas</div>
+        <div class="ti-preview">Segue o código atualizado com…</div>
+        <div class="ti-time">agora</div>
+        <div class="badge">2</div>
+      </div>
+      <div class="task-item">
+        <div class="ti-title">Print do erro de build</div>
+        <div class="ti-preview">🖼️ erro-build.png</div>
+        <div class="ti-time">12 min</div>
+      </div>
+      <div class="task-item">
+        <div class="ti-title">Query lenta no relatório</div>
+        <div class="ti-preview">O EXPLAIN mostra seq scan…</div>
+        <div class="ti-time">1 h</div>
+      </div>
+      <div class="task-label">Arquivadas</div>
+      <div class="task-item"><div class="ti-title" style="opacity:.6">Migração legada C#</div><div class="ti-time">ontem</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="main-header">
+      <div class="title">Refatorar módulo de faturas</div>
+      <span class="chip">🔓 decifrado</span>
+      <div class="h-actions">
+        <button class="tbtn on">🤖 Claude</button>
+        <button class="tbtn">Arquivar</button>
+      </div>
+    </div>
+    <div class="chat">
+      <div class="row input">
+        <div class="author">👤 Você · 14:02</div>
+        <div class="bubble">Como faço o parse dessa data no formato antigo do C#? Segue o trecho: <code>DateTime.ParseExact(...)</code></div>
+      </div>
+      <div class="row response">
+        <div class="author">🤖 Claude · 14:02</div>
+        <div class="bubble">Use <code>DateTime.ParseExact(valor, "dd/MM/yyyy", CultureInfo.InvariantCulture)</code>. Se o campo puder vir vazio, prefira <code>TryParseExact</code> para evitar exceção.</div>
+      </div>
+      <div class="row input">
+        <div class="author">👤 Você · 14:04</div>
+        <div class="bubble">Perfeito. E pra listar os arquivos do repo remoto?</div>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="io-controls">
+        <div class="seg"><button class="on">🤖 Claude</button><button>👤 Eu</button></div>
+        <button class="agent">🪶 Agente</button>
+      </div>
+      <div class="composer">
+        <button class="attach">📎</button>
+        <textarea rows="1" placeholder="Digite ou cole aqui..."></textarea>
+        <button class="send">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="login" hidden id="login">
+  <div class="login-box">
+    <div class="frieze"></div>
+    <div class="mark">indio<b>flechudo</b></div>
+    <p>relay pessoal · ponta-a-ponta</p>
+    <div class="pad">
+      <input type="password" placeholder="senha">
+      <button>Entrar</button>
+    </div>
+  </div>
+</div>
+<button class="peek" onclick="document.getElementById('login').hidden=!document.getElementById('login').hidden">alternar login/app</button>
+</body>
+</html>

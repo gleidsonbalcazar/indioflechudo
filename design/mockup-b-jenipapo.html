@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>indioflechudo — Design B · Jenipapo</title>
+<style>
+/* ============================================================
+   DESIGN B — "JENIPAPO"  (preto absoluto + pintura de guerra)
+   Minimalista. Preto real, um único acento turquesa-jenipapo
+   e osso/branco. Faixas de pintura corporal como detalhe.
+   Elegante, sóbrio, "menos é mais".
+   ============================================================ */
+:root{
+  --bg:#050506; --card:#0c0d0f; --sidebar-bg:#08090a; --sidebar-item:#131417;
+  --sidebar-selected:#0d1a1a; --input-bg:#050506; --text:#eef1ee; --text-muted:#7d827f;
+  --text-dim:#4a4e4c; --border:#191a1d;
+  --accent:#2dd4bf;         /* turquesa/jenipapo */
+  --accent-dim:#0e2926;
+  --bone:#e8e2d4;           /* osso */
+  --danger:#e5484d; --sidebar-w:280px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden}
+button{font-family:inherit}
+.app-layout{display:flex;height:100dvh}
+/* ---- sidebar ---- */
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.brand{padding:18px 16px 14px;display:flex;align-items:center;gap:10px}
+.brand-mark{font-size:1.05rem;font-weight:700;letter-spacing:.3px;color:var(--bone)}
+.brand-mark b{color:var(--accent);font-weight:700}
+/* war-paint stripes */
+.stripes{display:flex;gap:3px;margin-left:auto}
+.stripes i{width:3px;height:16px;background:var(--accent);opacity:.85;display:block;border-radius:2px}
+.stripes i:nth-child(2){height:11px;opacity:.5}
+.stripes i:nth-child(3){height:16px;opacity:.85}
+.sidebar-header{padding:0 12px 14px}
+.top-row{display:flex;gap:8px;margin-bottom:10px}
+.btn-new{flex:1;padding:10px;background:var(--accent);color:#04110f;border:none;border-radius:8px;font-weight:700;cursor:pointer}
+.btn-lock{width:42px;background:var(--input-bg);border:1px solid var(--border);color:var(--text-muted);border-radius:8px;cursor:pointer}
+.search{width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;outline:none}
+.search:focus{border-color:var(--accent)}
+.task-list{flex:1;overflow-y:auto;padding:6px}
+.task-label{font-size:.66rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);padding:12px 8px 4px}
+.task-item{padding:10px 12px;border-radius:8px;cursor:pointer;position:relative;margin-bottom:2px}
+.task-item:hover{background:var(--sidebar-item)}
+.task-item.selected{background:var(--sidebar-selected)}
+.task-item.selected::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;background:var(--accent);border-radius:2px}
+.ti-title{font-size:.9rem;font-weight:600}
+.ti-preview{font-size:.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ti-time{font-size:.68rem;color:var(--text-dim);margin-top:3px}
+.badge{position:absolute;top:10px;right:10px;background:var(--accent);color:#04110f;font-size:.65rem;font-weight:700;padding:1px 7px;border-radius:10px}
+/* ---- main ---- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.main-header{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--border)}
+.title{font-weight:600;font-size:1rem;color:var(--bone)}
+.chip{margin-left:auto;font-size:.7rem;color:var(--accent);border:1px solid var(--accent-dim);background:var(--accent-dim);padding:3px 10px;border-radius:20px}
+.h-actions{display:flex;gap:8px}
+.tbtn{background:var(--input-bg);border:1px solid var(--border);color:var(--text-muted);padding:6px 12px;border-radius:8px;font-size:.78rem;cursor:pointer}
+.tbtn.on{border-color:var(--accent);color:var(--accent)}
+.chat{flex:1;overflow-y:auto;padding:24px 20px;display:flex;flex-direction:column;gap:16px}
+.row{display:flex;flex-direction:column;max-width:70%}
+.row.input{align-self:flex-start}
+.row.response{align-self:flex-end;align-items:flex-end}
+.author{font-size:.68rem;color:var(--text-dim);margin:0 4px 5px}
+.bubble{padding:11px 15px;border-radius:12px;font-size:.9rem;line-height:1.55;white-space:pre-wrap}
+.row.input .bubble{background:#0f1113;border:1px solid var(--border)}
+.row.response .bubble{background:#0a1413;border:1px solid #16302c}
+.bubble code{background:#000;padding:1px 5px;border-radius:4px;color:var(--accent);font-family:ui-monospace,monospace;font-size:.85em}
+/* ---- input area ---- */
+.input-area{border-top:1px solid var(--border);padding:14px 18px;background:var(--card)}
+.io-controls{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.seg{display:flex;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{background:none;border:none;color:var(--text-muted);padding:6px 12px;font-size:.78rem;cursor:pointer}
+.seg button.on{background:var(--accent-dim);color:var(--accent)}
+.agent{margin-left:auto;background:var(--input-bg);border:1px solid var(--border);color:var(--text-muted);padding:6px 12px;border-radius:8px;font-size:.78rem;cursor:pointer}
+.composer{display:flex;gap:8px;align-items:flex-end}
+.attach{width:42px;height:42px;background:var(--input-bg);border:1px solid var(--border);border-radius:9px;color:var(--text-muted);cursor:pointer;font-size:1.1rem}
+.composer textarea{flex:1;background:var(--input-bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:11px 14px;font-size:.9rem;resize:none;outline:none;font-family:inherit}
+.composer textarea:focus{border-color:var(--accent)}
+.send{width:46px;height:42px;background:var(--accent);border:none;border-radius:9px;color:#04110f;font-size:1.15rem;cursor:pointer}
+/* ---- login overlay ---- */
+.login{position:fixed;inset:0;background:radial-gradient(1000px 500px at 50% 0%,#081413,#000);display:flex;align-items:center;justify-content:center;z-index:20}
+.login[hidden]{display:none}
+.login-box{width:350px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:36px 28px;text-align:center}
+.login-box .stripes{justify-content:center;margin:0 0 16px}
+.login-box .stripes i{height:22px}.login-box .stripes i:nth-child(2){height:14px}
+.login-box .mark{font-size:1.4rem;font-weight:700;color:var(--bone);margin-bottom:4px}
+.login-box .mark b{color:var(--accent)}
+.login-box p{color:var(--text-muted);font-size:.78rem;margin:0 0 22px;letter-spacing:.5px}
+.login-box input{width:100%;padding:12px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:9px;color:var(--text);margin-bottom:14px;outline:none;text-align:center}
+.login-box input:focus{border-color:var(--accent)}
+.login-box button{width:100%;padding:12px;background:var(--accent);color:#04110f;border:none;border-radius:9px;font-weight:700;cursor:pointer}
+.peek{position:fixed;bottom:14px;right:16px;z-index:30;background:var(--card);border:1px solid var(--border);color:var(--text-muted);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:.75rem}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">indio<b>flechudo</b></span>
+      <span class="stripes"><i></i><i></i><i></i></span>
+    </div>
+    <div class="sidebar-header">
+      <div class="top-row">
+        <button class="btn-new">Nova Task</button>
+        <button class="btn-lock">🔒</button>
+      </div>
+      <input class="search" placeholder="Buscar tasks...">
+    </div>
+    <div class="task-list">
+      <div class="task-label">Ativas</div>
+      <div class="task-item selected">
+        <div class="ti-title">Refatorar módulo de faturas</div>
+        <div class="ti-preview">Segue o código atualizado com…</div>
+        <div class="ti-time">agora</div>
+        <div class="badge">2</div>
+      </div>
+      <div class="task-item">
+        <div class="ti-title">Print do erro de build</div>
+        <div class="ti-preview">🖼️ erro-build.png</div>
+        <div class="ti-time">12 min</div>
+      </div>
+      <div class="task-item">
+        <div class="ti-title">Query lenta no relatório</div>
+        <div class="ti-preview">O EXPLAIN mostra seq scan…</div>
+        <div class="ti-time">1 h</div>
+      </div>
+      <div class="task-label">Arquivadas</div>
+      <div class="task-item"><div class="ti-title" style="opacity:.6">Migração legada C#</div><div class="ti-time">ontem</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="main-header">
+      <div class="title">Refatorar módulo de faturas</div>
+      <span class="chip">🔓 decifrado</span>
+      <div class="h-actions">
+        <button class="tbtn on">🤖 Claude</button>
+        <button class="tbtn">Arquivar</button>
+      </div>
+    </div>
+    <div class="chat">
+      <div class="row input">
+        <div class="author">👤 Você · 14:02</div>
+        <div class="bubble">Como faço o parse dessa data no formato antigo do C#? Segue o trecho: <code>DateTime.ParseExact(...)</code></div>
+      </div>
+      <div class="row response">
+        <div class="author">🤖 Claude · 14:02</div>
+        <div class="bubble">Use <code>DateTime.ParseExact(valor, "dd/MM/yyyy", CultureInfo.InvariantCulture)</code>. Se o campo puder vir vazio, prefira <code>TryParseExact</code> para evitar exceção.</div>
+      </div>
+      <div class="row input">
+        <div class="author">👤 Você · 14:04</div>
+        <div class="bubble">Perfeito. E pra listar os arquivos do repo remoto?</div>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="io-controls">
+        <div class="seg"><button class="on">🤖 Claude</button><button>👤 Eu</button></div>
+        <button class="agent">🪶 Agente</button>
+      </div>
+      <div class="composer">
+        <button class="attach">📎</button>
+        <textarea rows="1" placeholder="Digite ou cole aqui..."></textarea>
+        <button class="send">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="login" hidden id="login">
+  <div class="login-box">
+    <span class="stripes"><i></i><i></i><i></i></span>
+    <div class="mark">indio<b>flechudo</b></div>
+    <p>relay pessoal · ponta-a-ponta</p>
+    <input type="password" placeholder="senha">
+    <button>Entrar</button>
+  </div>
+</div>
+<button class="peek" onclick="document.getElementById('login').hidden=!document.getElementById('login').hidden">alternar login/app</button>
+</body>
+</html>

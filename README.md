@@ -16,9 +16,11 @@ ciphertext trafega e é persistido.
 
 ## Sumário
 
+- [Interface](#interface)
 - [Arquitetura em 30 segundos](#arquitetura-em-30-segundos)
 - [Stack](#stack)
 - [Rodar local (Docker)](#rodar-local-docker)
+- [Passo a passo (uso)](#passo-a-passo-uso)
 - [Configuração (.env)](#configuração-env)
 - [Como funciona o E2EE](#como-funciona-o-e2ee)
 - [Estrutura do repositório](#estrutura-do-repositório)
@@ -30,6 +32,24 @@ ciphertext trafega e é persistido.
 
 Para o detalhamento técnico (schema, eventos Socket.io, modelo de ameaças),
 veja **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+
+---
+
+## Interface
+
+Tema **Brasa** — preto quase absoluto com acentos de brasa (laranja-vermelho) e a
+flecha como assinatura. Interface single-file (`public/index.html`), sem build.
+
+**Tela de login**
+
+![Tela de login do indioflechudo](docs/screenshots/login-brasa.png)
+
+**App — lista de tasks + chat E2EE**
+
+![Interface principal do indioflechudo](docs/screenshots/app-brasa.png)
+
+> ℹ️ As imagens usam **dados de exemplo** (tasks e mensagens fictícias), apenas
+> para ilustração.
 
 ---
 
@@ -114,6 +134,36 @@ ACCESS_PASSWORD="uma-passphrase-longa" \
 DATABASE_URL="postgres://indio:indio@localhost:5432/indioflechudo" \
 node index.js                # http://localhost:3000
 ```
+
+---
+
+## Passo a passo (uso)
+
+Fluxo típico da interface, com **dados de exemplo** — nada aqui é real; troque
+pela sua senha e pelas suas próprias tasks.
+
+1. **Login** — abra `https://localhost:8444` e entre com a sua senha. No exemplo
+   usamos `MinhaSenha@2026` (é apenas um placeholder de documentação; em produção
+   use uma passphrase longa e única e **nunca** a versione). A mesma senha deriva
+   a chave E2EE no navegador — a partir daqui tudo é cifrado no cliente.
+
+2. **Criar uma task** — clique em **➤ Nova Task**. Cada task é uma conversa
+   isolada (ex.: *"Ajuste no relatório de vendas"*). O próprio título é cifrado.
+
+3. **Enviar conteúdo** — digite ou **cole** texto/print no campo inferior e envie
+   (botão ➤). Para arquivos, use 📎 ou **arraste** para a janela (csv, imagens,
+   xlsx, zip…). Tudo é cifrado antes de sair do navegador.
+
+4. **Quem responde** — no seletor **🤖 Claude / 👤 Eu**:
+   - **🤖 Claude**: o bridge responde automaticamente (requer o bridge rodando).
+   - **👤 Eu**: você mesmo responde do outro lado.
+
+5. **Modo agente (opcional)** — comece a mensagem com `/agente` (ou toque em
+   **🪶 Agente**) para o Claude operar um repositório remoto via ferramentas
+   (ler / buscar / editar / rodar), com aprovação para ações sensíveis.
+
+6. **Bloquear** — o cadeado 🔒 (ou 5 min de inatividade) limpa a chave da memória;
+   é preciso digitar a senha novamente para voltar a decifrar.
 
 ---
 
