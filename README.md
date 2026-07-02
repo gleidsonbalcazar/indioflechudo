@@ -16,6 +16,7 @@ ciphertext trafega e é persistido.
 
 ## Sumário
 
+- [Início rápido](#início-rápido)
 - [Interface](#interface)
 - [Arquitetura em 30 segundos](#arquitetura-em-30-segundos)
 - [Stack](#stack)
@@ -32,6 +33,36 @@ ciphertext trafega e é persistido.
 
 Para o detalhamento técnico (schema, eventos Socket.io, modelo de ameaças),
 veja **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+
+---
+
+## Início rápido
+
+**2 máquinas, ~3 comandos.** Guia completo em **[QUICKSTART.md](./QUICKSTART.md)**.
+
+**Máquina A — seu Mac** (Docker + Node + Claude Code autenticado):
+
+```bash
+git clone https://github.com/gleidsonbalcazar/indioflechudo.git
+cd indioflechudo
+./up.sh          # .env + senha, deps, relay (Docker), bridge — tudo num comando
+./doctor.sh      # checklist de saúde a qualquer momento
+```
+
+**Máquina B — alvo bloqueada**: abra o relay no navegador em **`/onboard`** e
+copie os comandos já preenchidos (testar rede + rodar o conector). Só precisa de
+Node e da mesma senha do login.
+
+**Glossário** — os nomes se confundem, então:
+
+| Termo | O que é | Onde roda |
+|-------|---------|-----------|
+| **relay** | servidor cego (só ciphertext) | Docker (Mac) ou Fly |
+| **bridge** | responde no chat via `claude -p` | Mac |
+| **executor** (conector) | as "mãos" do agente no repositório | Máquina alvo |
+
+> ⚠️ **bridge ≠ executor**: o *bridge* é o cérebro no Mac; o *executor* são as
+> mãos na máquina alvo. Só se falam pelo relay, sempre cifrados.
 
 ---
 
@@ -87,6 +118,10 @@ flecha como assinatura. Interface single-file (`public/index.html`), sem build.
 ## Rodar local (Docker)
 
 Pré-requisito: Docker + Docker Compose.
+
+> 💡 **Atalho:** `./up.sh` faz o setup inteiro (senha, deps, relay e bridge) num
+> comando só — veja [Início rápido](#início-rápido). Os passos abaixo são a via
+> manual / de baixo nível.
 
 ```bash
 # 1. Configure a senha (fora do git)
@@ -216,9 +251,10 @@ indioflechudo/
 ├── mcp/               # MCP server (roda no Mac): expõe ferramentas do agente
 ├── client/            # Executor + pings (rodam na máquina do codebase/VDI)
 ├── docker-compose.yml # app + db (postgres:16) + caddy
-├── Dockerfile         # imagem do app (node:20-alpine)
+├── Dockerfile         # imagem do app (multi-stage: bundles do conector + relay)
 ├── Caddyfile          # reverse proxy + TLS
-├── start.sh / stop.sh # sobe/derruba o stack local
+├── up.sh / doctor.sh  # bootstrap (1 comando) e diagnóstico do Mac
+├── start.sh / stop.sh # sobe/derruba o stack local (via baixo nível)
 └── .github/workflows/ # deploy Fly
 ```
 

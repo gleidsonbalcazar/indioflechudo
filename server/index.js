@@ -176,6 +176,74 @@ app.get('/e2ee-salt', (_req, res) => {
   });
 });
 
+// ── Kit da máquina-alvo (bloqueada) ──
+// /dl serve os conectores como arquivos únicos (bundles), e /onboard mostra os
+// comandos prontos. Ambos PÚBLICOS de propósito: é só código-cliente open source
+// e a segurança está na senha (E2EE), não em esconder o binário. Zero segredo aqui.
+const DL_DIR = path.join(__dirname, '..', 'dl');
+const DL_FILES = new Set(['executor.js', 'relay-ping.js', 'corp-ping.js']);
+
+app.get('/dl/:name', (req, res) => {
+  const name = req.params.name;
+  if (!DL_FILES.has(name)) return res.status(404).json({ error: 'Not found' });
+  res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+  res.sendFile(path.join(DL_DIR, name), (err) => {
+    if (err && !res.headersSent) res.status(404).json({ error: 'Bundle indisponível — rebuild da imagem (docker compose build).' });
+  });
+});
+
+function onboardPage(base) {
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>indioflechudo — conectar máquina alvo</title>
+<style>
+ :root{--bg:#0a0a0b;--card:#111113;--bd:#1e1e22;--tx:#f2ede4;--mut:#8f887c;--em:#ff5a1f}
+ *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(1100px 560px at 50% -12%,#1c0d06,#050506);color:var(--tx);min-height:100vh}
+ .wrap{max-width:760px;margin:0 auto;padding:40px 22px}
+ h1{font-weight:800;font-size:1.5rem}h1 b{background:linear-gradient(135deg,#ff5a1f,#ff8c42);-webkit-background-clip:text;background-clip:text;color:transparent}
+ .arrow{color:var(--em);filter:drop-shadow(0 0 8px rgba(255,90,31,.6))}
+ p{color:var(--mut);line-height:1.6}
+ .step{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
+ .step h2{font-size:1rem;margin:0 0 6px}
+ pre{background:#060607;border:1px solid var(--bd);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:.85rem}
+ code{font-family:ui-monospace,monospace}.em{color:var(--em)}
+ a.btn{display:inline-block;margin:4px 8px 0 0;padding:8px 12px;border:1px solid var(--bd);border-radius:8px;color:var(--tx);text-decoration:none;font-size:.85rem}
+ a.btn:hover{border-color:var(--em)}
+ .note{font-size:.82rem;color:var(--mut);border-left:2px solid var(--em);padding-left:10px;margin-top:10px}
+</style></head><body><div class="wrap">
+ <h1><span class="arrow">&#10148;</span> indio<b>flechudo</b> — conectar a máquina alvo</h1>
+ <p>Rode os comandos na <b>máquina bloqueada</b> (Windows). Ela só precisa de <b>Node</b> e de alcançar este relay: <code class="em">${base}</code></p>
+ <div class="step">
+  <h2>1 &middot; Testar a rede (sem dependências)</h2>
+  <p>Verifica se o Node atravessa o proxy até o relay. Troque <code>SEU-PROXY:8080</code>.</p>
+  <pre>curl.exe -o corp-ping.js ${base}/dl/corp-ping.js
+node corp-ping.js http://SEU-PROXY:8080</pre>
+  <div class="note">"CONNECT 200" + salt = OK. "CONNECT 407" = proxy exige login (NTLM), o caminho Node não passa. DNS/timeout = proxy/rede errados.</div>
+ </div>
+ <div class="step">
+  <h2>2 &middot; Rodar o conector (executor)</h2>
+  <p>As "mãos" do agente no repositório. Use a <b>mesma senha</b> do login (ela deriva a chave E2EE). Ajuste o caminho do repo e o proxy.</p>
+  <pre>curl.exe -o executor.js ${base}/dl/executor.js
+node --use-system-ca executor.js SUA_SENHA C:\\repo http://SEU-PROXY:8080</pre>
+  <div class="note">Somente leitura por padrão. Adicione <code>--write</code> e/ou <code>--run</code> para permitir edição/execução (com aprovação no chat).</div>
+ </div>
+ <div class="step">
+  <h2>Downloads diretos</h2>
+  <a class="btn" href="${base}/dl/corp-ping.js">corp-ping.js</a>
+  <a class="btn" href="${base}/dl/relay-ping.js">relay-ping.js</a>
+  <a class="btn" href="${base}/dl/executor.js">executor.js</a>
+ </div>
+ <p class="note">Sem Node na máquina alvo? Um executável único (.exe) está no roadmap. Relay local com Caddy self-signed? Acrescente <code>-k</code> ao curl.</p>
+</div></body></html>`;
+}
+
+app.get('/onboard', (req, res) => {
+  const base = `${req.protocol}://${req.get('host')}`.replace(/[^a-zA-Z0-9:/._-]/g, '');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(onboardPage(base));
+});
+
 // ── Task routes ──
 app.get('/tasks', requireAuth, wrap(async (_req, res) => {
   res.json(await db.listTaskMetas());
