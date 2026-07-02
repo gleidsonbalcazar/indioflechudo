@@ -1,109 +1,199 @@
 # indioflechudo
 
-Relay pessoal de texto e arquivos via web, com **criptografia ponta-a-ponta (E2EE)**.
-Útil para passar trechos de código, prints e arquivos entre máquinas (ex.: uma
-máquina restrita e o seu Mac) por uma página simples, em tempo real.
+Relay pessoal de **texto e arquivos** via web, com **criptografia ponta-a-ponta
+(E2EE)** e **servidor cego**. Serve para passar trechos de código, prints e
+arquivos entre máquinas — por exemplo, de uma máquina/VDI corporativa restrita
+para o seu Mac — por uma página simples, em tempo real.
 
-Derivado da base do Clipboard Relay, mas **projeto independente** com persistência
-em **Postgres** (o original usava arquivo JSON).
+O servidor **nunca vê o conteúdo em claro**: tudo é cifrado no navegador e só o
+ciphertext trafega e é persistido.
 
-- **Backend**: Node.js + Express + Socket.io, persistência em **Postgres** (`server/db.js`).
-- **Frontend**: um único `public/index.html` (sem build), vanilla JS.
-- **Deploy**: Docker Compose (app + Postgres) + Caddy (HTTPS automático).
+> Derivado da base do *Clipboard Relay*, mas é um **projeto independente**. A
+> diferença central é a persistência em **Postgres** (o original usava arquivo
+> JSON em disco).
 
-> **Dev local**: `docker compose up -d --build` sobe app + Postgres. App em
-> `http://127.0.0.1:3998` (ou `https://localhost:8444` via Caddy). Configure o
-> `.env` (copie de `.env.example`) com `ACCESS_PASSWORD`. O `DATABASE_URL` já vem
-> apontado pro serviço `db` do compose.
+---
 
-## Como funciona a criptografia
+## Sumário
 
-- O cliente deriva uma chave **AES-GCM** a partir da senha via **PBKDF2**
-  (600k iterações, SHA-256). A chave vive **apenas em memória** no navegador.
-- Todo conteúdo (mensagens, nomes e bytes de arquivos, títulos) é cifrado
-  **no cliente**. O servidor só armazena ciphertext — nunca vê o plaintext.
-- O `salt` do PBKDF2 é público por design (servido em `/e2ee-salt`).
+- [Arquitetura em 30 segundos](#arquitetura-em-30-segundos)
+- [Stack](#stack)
+- [Rodar local (Docker)](#rodar-local-docker)
+- [Configuração (.env)](#configuração-env)
+- [Como funciona o E2EE](#como-funciona-o-e2ee)
+- [Estrutura do repositório](#estrutura-do-repositório)
+- [Bridge automático (responder com o Claude)](#bridge-automático-responder-com-o-claude)
+- [Modo agente (operar um repositório remoto)](#modo-agente-operar-um-repositório-remoto)
+- [Deploy (Fly)](#deploy-fly)
+- [Notas de segurança](#notas-de-segurança)
+- [Estado atual e pendências](#estado-atual-e-pendências)
 
-> ⚠️ **A segurança depende inteiramente da senha.** `ACCESS_PASSWORD` é ao mesmo
-> tempo a senha de login **e** a semente da chave E2EE. Use uma passphrase longa
-> e única em produção, e **nunca** a versione (ela mora em `.env`, que está no
-> `.gitignore`).
+Para o detalhamento técnico (schema, eventos Socket.io, modelo de ameaças),
+veja **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
-## Setup
+---
+
+## Arquitetura em 30 segundos
+
+```
+ Navegador (Mac)                    Relay (servidor cego)                 Navegador/VDI
+ ───────────────                    ─────────────────────                 ─────────────
+ senha ──PBKDF2──► chave AES         Express + Socket.io                  chave AES ◄── senha
+ cifra no cliente ─────────────────► só armazena ciphertext ◄──────────── cifra no cliente
+ decifra ao ler   ◄──── Postgres (mensagens, arquivos=bytea, salt) ─────► decifra ao ler
+```
+
+- **Servidor cego**: mensagens, nomes/bytes de arquivos e títulos são cifrados
+  **no cliente**. O Postgres só guarda ciphertext.
+- **Tempo real**: entrega via Socket.io (salas por task).
+- **Uploads**: arquivos cifrados são armazenados como `bytea` **dentro do
+  Postgres** (não há storage em disco).
+
+---
+
+## Stack
+
+| Camada       | Tecnologia                                                        |
+|--------------|-------------------------------------------------------------------|
+| Backend      | Node.js 20 + Express + Socket.io                                   |
+| Persistência | **PostgreSQL 16** (`server/db.js`, pool `pg` + repositório)        |
+| Frontend     | `public/index.html` único, vanilla JS, **sem build**              |
+| Proxy/TLS    | Caddy 2 (HTTPS self-signed local; termina TLS em produção)         |
+| Orquestração | Docker Compose (`app` + `db` + `caddy`)                            |
+| Deploy       | Fly.io (workflow em `.github/workflows/`)                          |
+
+---
+
+## Rodar local (Docker)
+
+Pré-requisito: Docker + Docker Compose.
 
 ```bash
 # 1. Configure a senha (fora do git)
 cp .env.example .env
-$EDITOR .env            # defina ACCESS_PASSWORD
+$EDITOR .env                 # defina ACCESS_PASSWORD (passphrase longa)
 
-# 2. Suba
-./start.sh              # ou: docker compose up -d --build
+# 2. Suba tudo (app + Postgres + Caddy)
+./start.sh                   # equivale a: docker compose up -d --build
 ```
 
-Acesse **https://localhost:8443** (Caddy usa cert interno self-signed; o aviso do
-navegador é esperado em uso local). HTTP em :8080 redireciona para HTTPS.
+Portas publicadas (escolhidas para **não colidir** com outros stacks locais):
 
-### Ligar com um comando (Docker + ngrok)
+| Serviço            | URL                          | Observação                          |
+|--------------------|------------------------------|-------------------------------------|
+| App (direto)       | http://127.0.0.1:3998        | Só localhost                        |
+| Caddy (HTTPS)      | https://localhost:8444       | Cert interno self-signed (aviso ok) |
+| Caddy (HTTP)       | http://localhost:8081        | Redireciona para HTTPS              |
+
+Acesse **https://localhost:8444** e faça login com o `ACCESS_PASSWORD`.
+
+Se `ACCESS_PASSWORD` não estiver definido, o servidor gera uma senha aleatória e
+a imprime no log de startup:
 
 ```bash
-./run.sh         # sobe o Docker se não estiver no ar e ativa o ngrok
-./relay-stop.sh  # para o ngrok do relay e (opcional) o Docker
+docker compose logs app | grep -i password
 ```
 
-Defina `NGROK_DOMAIN` no `.env` para usar um domínio fixo do ngrok; sem isso o
-ngrok abre com URL aleatória. Dica de alias (zsh): `alias relay='/caminho/para/run.sh'`.
+### Parar / limpar
 
-Se `ACCESS_PASSWORD` não for definida, o servidor gera uma senha aleatória e a
-imprime no log de startup (`docker compose logs clipboard`).
+```bash
+./stop.sh        # pergunta se quer apagar o volume Postgres (pg_data)
+```
 
-### Rodar sem Docker (dev)
+Os dados moram no volume Docker **`pg_data`**. `docker compose down` preserva o
+volume; `docker compose down -v` (ou responder "y" no `stop.sh`) o apaga.
+
+### Rodar sem Docker (dev do backend)
+
+Requer um Postgres acessível.
 
 ```bash
 cd server
 npm ci
-ACCESS_PASSWORD="uma-passphrase-longa" node index.js   # http://localhost:3000
+ACCESS_PASSWORD="uma-passphrase-longa" \
+DATABASE_URL="postgres://indio:indio@localhost:5432/indioflechudo" \
+node index.js                # http://localhost:3000
 ```
 
-## Parar / limpar
+---
 
-```bash
-./stop.sh   # derruba os containers e pergunta se quer apagar os dados
+## Configuração (.env)
+
+Copie de [`.env.example`](./.env.example). Variáveis do servidor:
+
+| Variável           | Obrigatória | Default                                        | Para que serve                                                              |
+|--------------------|-------------|------------------------------------------------|----------------------------------------------------------------------------|
+| `ACCESS_PASSWORD`  | Recomendada | gerada aleatória e impressa no log             | Senha de login **e** semente da chave E2EE (veja aviso abaixo)             |
+| `DATABASE_URL`     | **Sim**     | serviço `db` do compose                        | Conexão Postgres: `postgres://user:pass@host:5432/db`                       |
+| `DATABASE_SSL`     | Não         | off                                            | `1`/`true`/`require` quando o Postgres exige TLS (provedores gerenciados)   |
+| `DATABASE_POOL_MAX`| Não         | `10`                                           | Tamanho máximo do pool de conexões                                          |
+| `TRUST_PROXY`      | Não         | `1` no `.env.example`                          | Ativa leitura de `X-Forwarded-For` atrás de proxy (Caddy/Fly)              |
+
+> ⚠️ **A segurança depende inteiramente da senha.** `ACCESS_PASSWORD` é ao mesmo
+> tempo a senha de login **e** a semente da chave E2EE. Use uma passphrase longa
+> e única em produção e **nunca** a versione (ela mora em `.env`, que está no
+> `.gitignore`). Em produção/Fly, use secrets.
+
+---
+
+## Como funciona o E2EE
+
+- O cliente deriva uma chave **AES-256-GCM** a partir da senha via
+  **PBKDF2-SHA256, 600.000 iterações**. A chave vive **apenas em memória** no
+  navegador (a página **auto-bloqueia após 5 min** de inatividade, limpando a
+  chave).
+- Todo conteúdo (mensagens, nomes e bytes de arquivos, títulos) é cifrado **no
+  cliente**. Formato do payload: `E1.<base64(iv)>.<base64(ciphertext||tag)>`
+  (IV de 12 bytes aleatório por mensagem, tag de 16 bytes).
+- O `salt` do PBKDF2 é **público por design** e servido em `GET /e2ee-salt`
+  junto dos parâmetros (`{ version, algo, iterations, salt }`). Ele é gerado uma
+  única vez no primeiro boot e guardado na tabela `config` do Postgres.
+- O servidor só recebe/armazena ciphertext — **nunca** o plaintext nem a chave.
+
+---
+
+## Estrutura do repositório
+
+```
+indioflechudo/
+├── server/            # Backend: Express + Socket.io + Postgres
+│   ├── index.js       #   rotas HTTP, auth, sockets, handlers
+│   └── db.js          #   pool pg + schema + repositório (tasks/messages/files/config)
+├── public/            # Frontend (servido pelo app)
+│   └── index.html     #   app single-file (E2EE no cliente, sem build)
+├── bridge/            # Worker headless: responde no chat via Claude Code CLI
+│   └── service/       #   install/uninstall como LaunchAgent (macOS)
+├── mcp/               # MCP server (roda no Mac): expõe ferramentas do agente
+├── client/            # Executor + pings (rodam na máquina do codebase/VDI)
+├── docker-compose.yml # app + db (postgres:16) + caddy
+├── Dockerfile         # imagem do app (node:20-alpine)
+├── Caddyfile          # reverse proxy + TLS
+├── start.sh / stop.sh # sobe/derruba o stack local
+└── .github/workflows/ # deploy Fly
 ```
 
-## Dados e backup
+---
 
-- Dados ficam em `./data/` (montado como volume): `tasks.json`, arquivos cifrados
-  em `data/files/`, e o salt em `data/e2ee-salt.bin`.
-- Escrita atômica (`tmp` + rename) com cópia `.prev` para rollback.
-- Snapshot diário em `data/backups/` com retenção de 30 dias.
-- **`data/` e `uploads/` estão no `.gitignore` — nunca são publicados.**
+## Bridge automático (responder com o Claude)
 
-## Bridge automático (opcional) — responder com o Claude
+O `bridge/` é um worker **headless** que age como "mais um cliente" do relay:
+quando chega uma mensagem do lado **`input`**, ele decifra, pergunta ao
+**Claude** e posta a resposta de volta como **`response`** — o outro lado só
+abre o chat e lê.
 
-O `bridge/` é um worker headless que automatiza o fluxo: quando chega uma
-mensagem do lado **`input`** (a máquina cliente), ele decifra, pergunta ao
-**Claude** e posta a resposta de volta como **`response`** — o cliente só
-precisa abrir o chat e ler.
-
-- **Chat puro via Claude Code**: usa o `claude -p` (reusa sua assinatura, **sem**
-  custo de API). Texto e arquivos de texto vão com `--tools ""` (sem
-  filesystem/bash). **Imagens** (png/jpg/gif/webp) são gravadas num arquivo
-  temporário e lidas com a ferramenta **Read** (só leitura, escopo do temp via
-  `--add-dir`) — é como o Claude "vê" a imagem. O temp é apagado depois.
-- **Tipos de arquivo**: texto (csv, svg, html, ts, scss, js, json…) inline;
-  **xlsx** via exceljs; **zip** via adm-zip; **imagens** via Read/visão.
+- **Sem custo de API**: usa o `claude -p` (reusa sua assinatura do Claude Code).
+  Chat puro roda com `--tools ""` (sem acesso a filesystem/bash).
+- **Tipos de arquivo**: texto (csv, svg, ts, json…) inline; **xlsx** via
+  exceljs; **zip** via adm-zip; **imagens** (png/jpg/gif/webp) via ferramenta
+  Read (visão), num arquivo temporário apagado depois.
 - **Memória por task**: cada task vira uma sessão do Claude Code (UUID
-  determinístico). A 1ª mensagem cria a sessão; as seguintes usam `--resume`,
-  então o Claude mantém o contexto, inclusive após restart do worker.
-- **Diretrizes fixas** (system prompt): por padrão, sem comentários no código e
-  contexto C# legado. Ajuste via `BRIDGE_SYSTEM_PROMPT` no `.env`.
-- **E2EE preservado**: o bridge é só "mais um cliente" com a senha — o servidor
-  continua cego. A chave AES é derivada igual ao front (PBKDF2 → AES-GCM).
-
-### Rodar o bridge
+  determinístico). A 1ª mensagem cria; as seguintes usam `--resume`, mantendo o
+  contexto mesmo após restart do worker.
+- **E2EE preservado**: o bridge tem a senha, deriva a mesma chave AES e é só
+  mais um cliente — o servidor continua cego.
 
 O bridge roda **no host** (onde o `claude` está instalado e autenticado), não no
-Docker. Ele fala com o relay pela porta publicada no localhost (`3000`):
+Docker. Ele fala com o relay pela porta publicada no localhost (**3998**):
 
 ```bash
 cd bridge
@@ -111,38 +201,98 @@ npm ci
 node --env-file=../.env bridge.js     # reusa ACCESS_PASSWORD do .env do relay
 ```
 
-Overrides opcionais (modelo, caminho do binário, timeout) em `bridge/.env.example`.
+Overrides opcionais (modelo, binário, timeout, system prompt) em
+[`bridge/.env.example`](./bridge/.env.example).
 
-### Quem responde + rótulo de autor
+No cliente há um seletor **Responder: 🤖 Claude / 👤 Eu** — o bridge só responde
+quando "🤖 Claude" está ativo. Cada mensagem mostra o autor (🤖 Claude / 👤 Você).
 
-No cliente há um seletor **Responder: 🤖 Claude / 👤 Eu**:
-
-- **🤖 Claude** (default): o bridge responde automaticamente a pergunta.
-- **👤 Eu**: o bridge ignora — você mesmo responde do outro lado (toggle "Mac").
-
-Cada mensagem mostra um rótulo de autor (🤖 Claude ou 👤 Você), então fica claro
-quem respondeu. Tecnicamente: as perguntas carregam `respondBy` (claude|human) e
-as respostas carregam `author`.
-
-### Rodar como serviço (macOS, sobe no boot + reinicia se cair)
+### Rodar como serviço (macOS — sobe no login, reinicia se cair)
 
 ```bash
 ./bridge/service/install-launchd.sh     # gera o plist com seus caminhos e carrega
-tail -f ~/Library/Logs/clipboard-bridge.out.log
+tail -f ~/Library/Logs/indioflechudo-bridge.out.log
 ./bridge/service/uninstall-launchd.sh   # para remover
 ```
 
 > ⚠️ O bridge tem a senha do relay (= chave E2EE). Trate-a como segredo de alto
 > valor e rode o worker com privilégio mínimo.
 
+---
+
+## Modo agente (operar um repositório remoto)
+
+Além do chat, o bridge pode entrar em **modo agente** (prefixo `/agente`,
+`@agente` ou `@repo` numa mensagem). Nesse modo o Claude opera um repositório que
+vive em **outra máquina** (ex.: a VDI corporativa) através de ferramentas MCP:
+
+```
+Claude (no Mac) ──► mcp/server.mjs (no Mac) ──relay(E2EE)──► client/executor.js (na VDI)
+```
+
+- `mcp/server.mjs` expõe as ferramentas ao Claude e encaminha cada chamada
+  cifrada pelo relay.
+- `client/executor.js` roda na máquina do codebase, executa a operação dentro do
+  `REPO_DIR` e devolve o resultado (cifrado).
+- Ferramentas: `list_dir`, `read_file`, `glob`, `grep` (leitura); `write_file`,
+  `edit_file`, `run` (escrita/execução — **gated por aprovação** e por flags
+  `--write` / `--run`, com allowlist de comandos).
+
+Detalhes e payloads em [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+---
+
+## Deploy (Fly)
+
+O relay é feito para ser **hospedado publicamente** — é seguro porque é cego
+(só ciphertext). O alvo é o **Fly.io**: o workflow
+[`.github/workflows/fly-deploy.yml`](./.github/workflows/fly-deploy.yml) roda
+`flyctl deploy --remote-only` em cada push na `main`.
+
+> **Por que Fly e não ngrok?** A VDI corporativa de destino bloqueia o ngrok
+> (categoria na blocklist), mas alcança `fly.dev` (app hosting) direto, sem
+> proxy. Como o relay é E2EE cego, hospedá-lo em endereço público é seguro.
+
+Para o deploy funcionar ainda faltam (veja pendências):
+
+1. **`fly.toml`** na raiz (app Fly próprio, distinto de outros projetos).
+2. Um **Postgres** (Fly Postgres ou gerenciado externo).
+3. Secrets no app Fly: `ACCESS_PASSWORD`, `DATABASE_URL`
+   (`DATABASE_SSL=1` se o Postgres externo exigir TLS) e `FLY_API_TOKEN` no
+   GitHub Actions.
+
+---
+
 ## Notas de segurança
 
-- Headers de segurança (CSP sem origens externas, `X-Frame-Options: DENY`,
-  `nosniff`) aplicados no servidor.
-- Dependências de frontend são **self-hospedadas** (sem CDN): o cliente
-  socket.io vem do próprio servidor e o `marked` é servido localmente com SRI.
-- Cookie de sessão `httpOnly` + `SameSite=Lax`; rate limit no `/login`.
+- **Servidor cego**: todo dado persistido é ciphertext; chave e plaintext nunca
+  saem do cliente.
+- **Auth**: comparação de senha em tempo constante (`timingSafeEqual`),
+  rate-limit no `/login` + **lockout escalonado por IP** (5 falhas → 30s,
+  dobrando até 30 min). Sessão em cookie `httpOnly` + `SameSite=Lax`, expira em
+  24h.
+- **Headers**: CSP **sem origens externas** (nada de CDN), `X-Frame-Options:
+  DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`.
+- **Sem CDN**: o cliente Socket.io e o `marked` são servidos localmente (SRI).
+
+---
+
+## Estado atual e pendências
+
+**Validado** (2026-07-02, end-to-end local): schema criado, login, criar task e
+persistência confirmada no Postgres.
+
+**Pendências conhecidas:**
+
+- [ ] **`fly.toml` ausente** — o workflow de deploy existe mas falha até criá-lo
+      (+ Postgres gerenciado + secrets). Deploy foi adiado por decisão do dono.
+- [ ] **Rota `/dl/:name`** (download do bundle do executor) **não foi portada** —
+      dependia de `data/dist` em disco; refazer servindo da imagem ou do DB.
+- [ ] Os defaults de `RELAY_URL` no `client/` usam o placeholder
+      `https://your-app.fly.dev` — troque pela URL Fly real quando existir.
+
+---
 
 ## Licença
 
-Uso pessoal. Sem garantias.
+Uso pessoal/interno. Sem garantias.

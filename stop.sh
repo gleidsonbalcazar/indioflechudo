@@ -2,15 +2,16 @@
 set -e
 cd "$(dirname "$0")"
 
-echo "Stopping Clipboard Relay..."
-docker compose down
+echo "Stopping indioflechudo..."
 
-read -p "Limpar dados (tasks + arquivos)? (y/N) " -n 1 -r
+read -p "Apagar tambem os dados (volume Postgres 'pg_data')? (y/N) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    rm -rf ./data/files/*
-    rm -f ./data/tasks.json
-    echo "Dados limpos."
+    docker compose down -v
+    echo "Containers e dados (pg_data) removidos."
+else
+    docker compose down
+    echo "Containers parados; dados preservados no volume pg_data."
 fi
 
-echo "Clipboard Relay parado."
+echo "indioflechudo parado."

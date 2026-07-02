@@ -10,7 +10,7 @@
  *   node corp-ping.js <proxyUrl> [relayUrl]
  * Exemplos:
  *   node corp-ping.js http://meu-proxy:8080
- *   node corp-ping.js http://meu-proxy:8080 https://play.ngrok.dev
+ *   node corp-ping.js http://meu-proxy:8080 https://your-app.fly.dev
  *   (ou defina HTTPS_PROXY no ambiente e rode: node corp-ping.js)
  *
  * Interpretação:
@@ -24,7 +24,7 @@ const https = require('https');
 const tls = require('tls');
 
 const PROXY = process.argv[2] || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
-const RELAY = process.argv[3] || process.env.RELAY_URL || 'https://play.ngrok.dev';
+const RELAY = process.argv[3] || process.env.RELAY_URL || 'https://your-app.fly.dev';
 
 if (!PROXY) {
   console.error('Faltou o proxy. Uso: node corp-ping.js http://seu-proxy:8080 [relayUrl]');

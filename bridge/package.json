@@ -1,5 +1,5 @@
 {
-  "name": "clipboard-relay-bridge",
+  "name": "indioflechudo-bridge",
   "version": "1.0.0",
   "description": "Headless bridge: forwards relay 'input' messages to Claude Code (claude -p, chat-only) and posts answers back",
   "main": "bridge.js",

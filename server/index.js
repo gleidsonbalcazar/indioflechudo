@@ -93,7 +93,7 @@ function wrap(fn) {
   });
 }
 
-// Tráfego remoto SEMPRE passa por um proxy (ngrok/Caddy/Fly) que injeta
+// Tráfego remoto SEMPRE passa por um proxy (Caddy/Fly) que injeta
 // X-Forwarded-For; tráfego direto ao app (host, rede Docker, bridge) não tem
 // XFF. Logo "sem XFF" = local confiável — isento do brute-force guard.
 function isTrustedLocal(req) { return !req.headers['x-forwarded-for']; }

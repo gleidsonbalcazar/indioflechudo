@@ -1,5 +1,5 @@
 {
-  "name": "clipboard-relay-client",
+  "name": "indioflechudo-client",
   "version": "1.0.0",
   "description": "Client-side executor/ping for the relay (runs on the corporate machine)",
   "private": true,

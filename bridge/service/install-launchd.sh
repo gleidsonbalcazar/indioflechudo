@@ -50,7 +50,7 @@ cat > "$PLIST" <<EOF
         <key>CLAUDE_BIN</key>
         <string>$CLAUDE_BIN</string>
         <key>RELAY_URL</key>
-        <string>http://localhost:3999</string>
+        <string>http://localhost:3998</string>
     </dict>
     <key>RunAtLoad</key>
     <true/>

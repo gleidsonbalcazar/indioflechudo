@@ -4,8 +4,8 @@ services:
     restart: always
     expose:
       - "3000"
-    # Publicado só no localhost na 3998 (indioflechudo). Evita colisão com o
-    # clipboard (3999) e o stack de trabalho (omni, 3000). LAN entra via Caddy.
+    # Publicado só no localhost na 3998. Acesso externo/LAN entra via Caddy
+    # (8444/8081) ou pelo relay hospedado (Fly).
     ports:
       - "127.0.0.1:3998:3000"
     env_file:

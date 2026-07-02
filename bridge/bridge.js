@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Clipboard Relay — Bridge (caminho B: chat puro via Claude Code CLI)
+ * indioflechudo — Bridge (caminho B: chat puro via Claude Code CLI)
  * ------------------------------------------------------------------
  * Worker headless que age como "mais um cliente" do relay:
  *   1. faz login e deriva a MESMA chave AES-GCM (E2EE preservado — o servidor
@@ -29,7 +29,7 @@ const { spawn } = require('child_process');
 const { io } = require('socket.io-client');
 
 // ── Config ──
-const RELAY_URL = process.env.RELAY_URL || 'http://localhost:3000';
+const RELAY_URL = process.env.RELAY_URL || 'http://localhost:3998';
 const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD;
 const CLAUDE_BIN = process.env.CLAUDE_BIN || 'claude';
 const CLAUDE_MODEL = process.env.CLAUDE_MODEL || ''; // vazio = default do Claude Code
@@ -217,7 +217,7 @@ const createdSessions = new Set(); // taskIds cuja sessão já foi criada nesta 
 
 // UUID v4-shaped determinístico a partir do taskId (mesma task -> mesma sessão).
 function taskSessionId(taskId) {
-  const b = crypto.createHash('sha256').update('clipboard-relay:' + taskId).digest().subarray(0, 16);
+  const b = crypto.createHash('sha256').update('indioflechudo:' + taskId).digest().subarray(0, 16);
   b[6] = (b[6] & 0x0f) | 0x40; // versão 4
   b[8] = (b[8] & 0x3f) | 0x80; // variante RFC4122
   const h = b.toString('hex');

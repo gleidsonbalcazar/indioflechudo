@@ -29,7 +29,7 @@ const ARGS = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const PASSWORD = ARGS[0] || process.env.RELAY_PASSWORD;
 const REPO_DIR = path.resolve(ARGS[1] || process.env.REPO_DIR || '.');
 const PROXY = ARGS[2] || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
-const RELAY = ARGS[3] || process.env.RELAY_URL || 'https://play.ngrok.dev';
+const RELAY = ARGS[3] || process.env.RELAY_URL || 'https://your-app.fly.dev';
 const agent = PROXY ? new HttpsProxyAgent(PROXY) : undefined;
 
 const MAX_READ = 400 * 1024;     // cap por arquivo lido

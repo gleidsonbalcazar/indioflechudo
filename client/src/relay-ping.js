@@ -19,7 +19,7 @@ const { io } = require('socket.io-client');
 
 const PASSWORD = process.argv[2] || process.env.RELAY_PASSWORD;
 const PROXY = process.argv[3] || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
-const RELAY = process.argv[4] || process.env.RELAY_URL || 'https://play.ngrok.dev';
+const RELAY = process.argv[4] || process.env.RELAY_URL || 'https://your-app.fly.dev';
 const agent = PROXY ? new HttpsProxyAgent(PROXY) : undefined;
 
 if (!PASSWORD) { console.error('Uso: node --use-system-ca relay-ping.js <senha> [proxyUrl] [relayUrl]'); process.exit(1); }

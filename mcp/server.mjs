@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { io } from 'socket.io-client';
 import crypto from 'node:crypto';
 
-const RELAY = process.env.RELAY_URL || 'http://localhost:3999';
+const RELAY = process.env.RELAY_URL || 'http://localhost:3998';
 const PASSWORD = process.env.ACCESS_PASSWORD;
 const RPC_TIMEOUT_MS = parseInt(process.env.AGENT_RPC_TIMEOUT_MS || '30000', 10);
 const log = (...a) => console.error('[mcp]', ...a);
