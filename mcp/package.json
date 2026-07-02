@@ -1,0 +1,11 @@
+{
+  "name": "clipboard-relay-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server (Mac) that proxies agent tools over the relay to the remote executor",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "socket.io-client": "^4.7.4"
+  }
+}

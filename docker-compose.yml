@@ -1,0 +1,55 @@
+services:
+  app:
+    build: .
+    restart: always
+    expose:
+      - "3000"
+    # Publicado só no localhost na 3998 (indioflechudo). Evita colisão com o
+    # clipboard (3999) e o stack de trabalho (omni, 3000). LAN entra via Caddy.
+    ports:
+      - "127.0.0.1:3998:3000"
+    env_file:
+      - .env
+    environment:
+      # Aponta pro Postgres do compose. Em produção/Fly, defina DATABASE_URL
+      # como secret (não versionado). Credenciais aqui são só de dev local.
+      DATABASE_URL: ${DATABASE_URL:-postgres://indio:indio@db:5432/indioflechudo}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-indio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-indio}
+      POSTGRES_DB: ${POSTGRES_DB:-indioflechudo}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-indio} -d ${POSTGRES_DB:-indioflechudo}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "8444:443"
+      - "8081:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+# Nota: o bridge automático (respostas via Claude) NÃO roda no Docker — ele
+# usa o `claude` CLI instalado/autenticado no host. Veja bridge/ e o README.
+
+volumes:
+  pg_data:
+  caddy_data:
+  caddy_config:

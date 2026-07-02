@@ -1,0 +1,14 @@
+{
+  "name": "clipboard-relay-bridge",
+  "version": "1.0.0",
+  "description": "Headless bridge: forwards relay 'input' messages to Claude Code (claude -p, chat-only) and posts answers back",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "exceljs": "^4.4.0",
+    "socket.io-client": "^4.7.4"
+  }
+}

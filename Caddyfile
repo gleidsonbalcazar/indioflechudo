@@ -1,0 +1,38 @@
+# Clipboard Relay reverse proxy.
+#
+# Padrao: TLS local (self-signed via CA interna do Caddy) para o hostname
+# "localhost". Acesse via https://localhost:8443.
+# O navegador mostrara aviso de cert nao confiavel — esperado em uso interno.
+# Para confiar de vez, exporte e instale a CA interna do Caddy:
+#   docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt
+#
+# Para usar de outras maquinas na LAN, adicione o hostname ao bloco abaixo:
+#   localhost, meu-mac.local, clipboard.lan { ... }
+#
+# Para dominio publico com Let's Encrypt automatico, troque "localhost" pelo
+# seu dominio e remova "tls internal" — o Caddy detecta dominio publico e
+# emite cert valido sozinho. Lembre-se de adicionar "email seu@dominio" no
+# bloco global e expor as portas 80/443 reais.
+
+{
+	auto_https disable_redirects
+	# email seu-email@dominio.com
+}
+
+localhost {
+	tls internal
+
+	# Acomoda upload criptografado (10MB plain + overhead AES-GCM/base64)
+	request_body {
+		max_size 25MB
+	}
+
+	encode zstd gzip
+
+	reverse_proxy app:3000
+}
+
+# Redireciona HTTP -> HTTPS
+:80 {
+	redir https://{host}{uri} permanent
+}

@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.env.example
+data
+uploads
+node_modules
+server/node_modules
+**/.DS_Store
+*.log
+README.md
+.claude
