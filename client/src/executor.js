@@ -10,7 +10,9 @@
  * ou rodar comandos ainda.
  *
  * Uso (na máquina alvo) — flags nomeadas, proxy OPCIONAL:
- *   node --use-system-ca executor.js --password X --repo C:\repo --relay https://... [--proxy http://host:8080] [--write] [--run]
+ *   node --use-system-ca executor.js --password X --repo C:\repo --relay https://... [--proxy http://host:8080] [--write] [--run] [--yolo]
+ * --yolo = livre: habilita escrita+execução, sem aprovação e sem allowlist de
+ *   comando. A cerca do REPO_DIR vale só p/ arquivos; o `run` NÃO é confinado.
  * Sem proxy é só omitir --proxy. Posicional ainda funciona (compat):
  *   node --use-system-ca executor.js <senha> <repoDir> [proxy] [relay]
  */
@@ -34,7 +36,7 @@ for (let i = 0; i < _av.length; i++) {
   const m = a.match(/^--([a-z-]+)(?:=(.*))?$/i);
   if (!m) { pos.push(a); continue; }
   const k = m[1].toLowerCase();
-  if (k === 'write' || k === 'run') { flags[k] = true; continue; }
+  if (k === 'write' || k === 'run' || k === 'yolo') { flags[k] = true; continue; }
   if (VALUE_FLAGS.has(k)) { flags[k] = m[2] !== undefined ? m[2] : _av[++i]; continue; }
   // flag desconhecida: ignora (não consome o próximo token)
 }
@@ -48,15 +50,19 @@ const MAX_READ = 400 * 1024;     // cap por arquivo lido
 const MAX_HITS = 300;            // cap de resultados em grep/glob
 const IGNORE = new Set(['node_modules', '.git', 'bin', 'obj', '.vs', 'packages', 'dist']);
 // Escrita só é permitida se o executor subir com --write (ou AGENT_WRITE=1).
-const ALLOW_WRITE = !!flags.write || /^(1|true|yes)$/i.test(process.env.AGENT_WRITE || '');
-// Execução de comandos só com --run (ou AGENT_RUN=1). Allowlist do 1º token.
-const ALLOW_RUN = !!flags.run || /^(1|true|yes)$/i.test(process.env.AGENT_RUN || '');
+// --yolo: modo livre — habilita escrita+execução, SEM aprovação e SEM allowlist.
+// A cerca do REPO_DIR (safe()) permanece para as ferramentas de ARQUIVO, mas
+// NÃO confina o `run` (um comando pode sair do diretório). Aviso no boot.
+const YOLO = !!flags.yolo || /^(1|true|yes)$/i.test(process.env.AGENT_YOLO || '');
+const ALLOW_WRITE = YOLO || !!flags.write || /^(1|true|yes)$/i.test(process.env.AGENT_WRITE || '');
+// Execução de comandos com --run/--yolo (ou AGENT_RUN=1). Allowlist do 1º token (ignorada no --yolo).
+const ALLOW_RUN = YOLO || !!flags.run || /^(1|true|yes)$/i.test(process.env.AGENT_RUN || '');
 const RUN_ALLOWLIST = (process.env.RUN_ALLOW || 'dotnet,git,msbuild,nuget,sqlcmd,where,dir,type,findstr')
   .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 const RUN_TIMEOUT_MS = parseInt(process.env.RUN_TIMEOUT_MS || '120000', 10);
 const RUN_MAX_OUT = 100 * 1024;
 
-if (!PASSWORD) { console.error('Uso: node --use-system-ca executor.js --password <senha> --repo <dir> --relay <url> [--proxy <url>] [--write] [--run]'); process.exit(1); }
+if (!PASSWORD) { console.error('Uso: node --use-system-ca executor.js --password <senha> --repo <dir> --relay <url> [--proxy <url>] [--write] [--run] [--yolo]'); process.exit(1); }
 
 function log(...a) { console.log(new Date().toISOString(), ...a); }
 
@@ -116,6 +122,7 @@ const approvals = new Map();
 let apSeq = 0;
 const APPROVAL_TIMEOUT_MS = 120000;
 function awaitApproval(taskId, summary) {
+  if (YOLO) { log(`auto-aprovado (--yolo): ${summary.kind} ${summary.path || summary.command || ''}`); return Promise.resolve(true); }
   return new Promise((resolve) => {
     if (!taskId || !socket) return resolve(false);
     const id = 'ap' + (++apSeq);
@@ -198,7 +205,7 @@ const methods = {
     if (!ALLOW_RUN) return { error: 'execução desabilitada — suba o executor com --run' };
     if (typeof command !== 'string' || !command.trim()) return { error: 'comando vazio' };
     const first = command.trim().split(/\s+/)[0].toLowerCase().replace(/\.exe$/, '');
-    if (!RUN_ALLOWLIST.includes(first)) return { error: `comando "${first}" não está na allowlist (${RUN_ALLOWLIST.join(', ')})` };
+    if (!YOLO && !RUN_ALLOWLIST.includes(first)) return { error: `comando "${first}" não está na allowlist (${RUN_ALLOWLIST.join(', ')}). Use --yolo para liberar qualquer comando.` };
     const wd = cwd ? safe(cwd) : REPO_DIR;
     const ok = await awaitApproval(taskId, { kind: 'run', command: command.slice(0, 1000), cwd: path.relative(REPO_DIR, wd) || '.' });
     if (!ok) return { error: 'execução rejeitada ou aprovação expirada' };
@@ -234,6 +241,7 @@ function httpJson(method, url, headers = {}, body) {
 
 async function main() {
   log(`executor — repo=${REPO_DIR} relay=${RELAY} proxy=${PROXY || '(nenhum)'}`);
+  if (YOLO) log('⚠️  --yolo ATIVO: escrita+execução liberadas, SEM aprovação e SEM allowlist. O `run` NÃO é confinado ao repo — use com cuidado.');
   if (!fs.existsSync(REPO_DIR)) { console.error('REPO_DIR não existe:', REPO_DIR); process.exit(1); }
   const lr = await httpJson('POST', RELAY + '/login', { 'Content-Type': 'application/json' }, JSON.stringify({ password: PASSWORD }));
   if (lr.status !== 200) { console.error('login falhou:', lr.status); process.exit(1); }
@@ -243,7 +251,7 @@ async function main() {
   log('login ok, chave derivada');
 
   socket = io(RELAY, { agent, extraHeaders: { Cookie: cookie }, transports: ['websocket'], reconnection: true, reconnectionDelay: 2000 });
-  socket.on('connect', () => { socket.emit('agent:join'); log(`conectado, no canal agent:main — escrita ${ALLOW_WRITE ? 'ON' : 'off'}, run ${ALLOW_RUN ? 'ON' : 'off'}`); });
+  socket.on('connect', () => { socket.emit('agent:join'); log(`conectado, no canal agent:main — escrita ${ALLOW_WRITE ? 'ON' : 'off'}, run ${ALLOW_RUN ? 'ON' : 'off'}${YOLO ? ', YOLO (sem aprovação/allowlist)' : ''}`); });
   socket.on('disconnect', (r) => log('desconectado:', r));
   socket.on('connect_error', (e) => log('erro de conexão:', e.message));
 
