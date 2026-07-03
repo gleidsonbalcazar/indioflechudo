@@ -489,6 +489,7 @@ async function seedSeen() {
 function connect() {
   socket = io(RELAY_URL, {
     extraHeaders: { Cookie: `session_token=${sessionToken}` },
+    transports: ['websocket'], // só WS: mais estável atrás de proxies (Render/ALB)
     reconnection: true,
     reconnectionDelay: 1000,
   });
