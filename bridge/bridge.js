@@ -491,30 +491,37 @@ async function seedSeen() {
   log(`backlog ignorado: ${tasks.length} task(s) marcadas como vistas`);
 }
 
-function connect() {
-  socket = io(RELAY_URL, {
-    extraHeaders: { Cookie: `session_token=${sessionToken}` },
-    transports: ['websocket'], // só WS: mais estável atrás de proxies (Render/ALB)
-    reconnection: true,
-    reconnectionDelay: 1000,
+let alive = false;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function connectOnce() {
+  return new Promise((resolve, reject) => {
+    socket = io(RELAY_URL, {
+      extraHeaders: { Cookie: `session_token=${sessionToken}` },
+      transports: ['websocket'], // só WS: mais estável atrás de proxies (Render/ALB)
+      reconnection: false,       // reconexão MANUAL com re-login (ver keepConnected)
+    });
+    const to = setTimeout(() => reject(new Error('timeout conectando')), 15000);
+    socket.on('connect', () => { clearTimeout(to); alive = true; log('conectado ao relay'); resolve(); });
+    socket.on('connect_error', (err) => { clearTimeout(to); reject(err); });
+    socket.on('disconnect', (reason) => { alive = false; log('desconectado:', reason); });
+    socket.on('task:updated', onMeta);
+    socket.on('task:created', onMeta);
   });
+}
 
-  socket.on('connect', () => log('conectado ao relay'));
-  socket.on('disconnect', (reason) => log('desconectado:', reason));
-  socket.on('task:updated', onMeta);
-  socket.on('task:created', onMeta);
-
-  socket.on('connect_error', async (err) => {
-    if (err && /unauthorized/i.test(err.message || '')) {
-      log('sessão expirada — refazendo login');
-      try {
-        sessionToken = await login();
-        socket.io.opts.extraHeaders = { Cookie: `session_token=${sessionToken}` };
-      } catch (e) { log('relogin falhou:', e.message); }
-    } else {
-      log('erro de conexão:', err && err.message);
+// Mantém a conexão viva. O Render free derruba o WS com frequência e reinicia o
+// relay (invalidando a sessão em memória); a reconexão nativa do socket.io não
+// recupera bem esse caso. Aqui, a cada queda re-logamos e reconectamos.
+async function keepConnected() {
+  while (true) {
+    if (!alive) {
+      try { if (socket) { socket.removeAllListeners(); socket.close(); } } catch (_) {}
+      try { sessionToken = await login(); await connectOnce(); }
+      catch (e) { log('reconexão falhou (retry 4s):', e.message); await sleep(4000); continue; }
     }
-  });
+    await sleep(3000);
+  }
 }
 
 async function main() {
@@ -523,7 +530,7 @@ async function main() {
   sessionToken = await login();
   await deriveKey();
   await seedSeen();
-  connect();
+  keepConnected(); // conecta e mantém a conexão viva (re-loga se cair)
   // Keepalive HTTP: mantém o relay acordado (hosts free como o Render hibernam) e
   // a conexão viva enquanto o bridge roda. Sem isso o worker cai na hibernação.
   setInterval(() => { fetch(RELAY_URL + '/healthz').catch(() => {}); }, 5 * 60 * 1000);
