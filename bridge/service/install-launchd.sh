@@ -15,7 +15,9 @@ PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 NODE_BIN="$(command -v node)"
 CLAUDE_BIN="$(command -v claude || true)"
-ENV_FILE="$PROJECT_DIR/.env"
+# ENV_FILE e RELAY_URL podem ser sobrescritos no ambiente para apontar o bridge
+# a um relay hospedado (ex.: Render). Default = relay local (.env do projeto).
+ENV_FILE="${ENV_FILE:-$PROJECT_DIR/.env}"
 
 [ -z "$NODE_BIN" ]   && { echo "node não encontrado no PATH"; exit 1; }
 [ -z "$CLAUDE_BIN" ] && { echo "claude não encontrado no PATH (instale/autentique o Claude Code)"; exit 1; }
@@ -49,8 +51,6 @@ cat > "$PLIST" <<EOF
         <string>$CLAUDE_DIR:$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>CLAUDE_BIN</key>
         <string>$CLAUDE_BIN</string>
-        <key>RELAY_URL</key>
-        <string>http://localhost:3998</string>
     </dict>
     <key>RunAtLoad</key>
     <true/>

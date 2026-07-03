@@ -518,6 +518,9 @@ async function main() {
   await deriveKey();
   await seedSeen();
   connect();
+  // Keepalive HTTP: mantém o relay acordado (hosts free como o Render hibernam) e
+  // a conexão viva enquanto o bridge roda. Sem isso o worker cai na hibernação.
+  setInterval(() => { fetch(RELAY_URL + '/healthz').catch(() => {}); }, 5 * 60 * 1000);
   log('bridge pronto — aguardando mensagens (side=input).');
 }
 
