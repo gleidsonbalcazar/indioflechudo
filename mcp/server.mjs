@@ -60,9 +60,21 @@ async function connectRelay() {
 }
 
 const TASK_ID = process.env.AGENT_TASK_ID || '';
-function rpc(method, params, timeoutMs) {
+// Espera a conexão com o relay ficar pronta (ela sobe em background para não
+// atrasar o handshake do MCP com o claude).
+function waitConnected(ms = 10000) {
   return new Promise((resolve) => {
-    if (!socket || !socket.connected) return resolve({ error: 'executor/relay desconectado' });
+    if (socket && socket.connected) return resolve(true);
+    const start = Date.now();
+    const iv = setInterval(() => {
+      if (socket && socket.connected) { clearInterval(iv); resolve(true); }
+      else if (Date.now() - start > ms) { clearInterval(iv); resolve(false); }
+    }, 200);
+  });
+}
+async function rpc(method, params, timeoutMs) {
+  if (!(await waitConnected())) return { error: 'executor/relay desconectado' };
+  return new Promise((resolve) => {
     const id = crypto.randomUUID();
     const to = setTimeout(() => { pending.delete(id); resolve({ error: 'timeout: o executor não respondeu (ele está rodando na máquina do codebase?)' }); }, timeoutMs || RPC_TIMEOUT_MS);
     pending.set(id, { resolve, to });
@@ -108,7 +120,11 @@ server.registerTool('run',
   async ({ command, cwd }) => toText(await rpc('run', { command, cwd, taskId: TASK_ID }, 200000)));
 
 (async () => {
-  try { await connectRelay(); } catch (e) { log('falha ao conectar no relay:', e.message); }
+  // stdio PRIMEIRO: o claude precisa da lista de ferramentas imediatamente, senão
+  // a inicialização do MCP dá timeout (relay lento/cold, ex.: Render) e o modelo
+  // fica SEM ferramentas e alucina as chamadas. Conecta no relay em background;
+  // se um tool for chamado antes de conectar, rpc() aguarda (waitConnected).
   await server.connect(new StdioServerTransport());
   log('MCP pronto (stdio)');
+  connectRelay().catch((e) => log('falha ao conectar no relay:', e.message));
 })();
