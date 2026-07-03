@@ -229,8 +229,8 @@ node corp-ping.js http://SEU-PROXY:8080</pre>
   <h2>2 &middot; Rodar o conector (executor)</h2>
   <p>As "mãos" do agente no repositório. Use a <b>mesma senha</b> do login (ela deriva a chave E2EE). Ajuste o caminho do repo e o proxy.</p>
   <pre>curl.exe -o executor.js ${base}/dl/executor.js
-node --use-system-ca executor.js SUA_SENHA C:\\repo http://SEU-PROXY:8080</pre>
-  <div class="note">Somente leitura por padrão. Adicione <code>--write</code> e/ou <code>--run</code> para permitir edição/execução (com aprovação no chat).</div>
+node --use-system-ca executor.js SUA_SENHA C:\\repo http://SEU-PROXY:8080 ${base}</pre>
+  <div class="note">O último argumento é a URL deste relay (já preenchida). Sem proxy corporativo? Troque <code>http://SEU-PROXY:8080</code> por <code>""</code>. Somente leitura por padrão — adicione <code>--write</code> e/ou <code>--run</code> para permitir edição/execução (com aprovação no chat).</div>
  </div>
  <div class="step">
   <h2>Downloads diretos</h2>
