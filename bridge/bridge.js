@@ -51,6 +51,11 @@ const ANSWER_BACKLOG = /^(1|true|yes)$/i.test(process.env.BRIDGE_ANSWER_BACKLOG 
 const AGENT_PREFIX = /^\s*(\/agente|@agente|@repo)\b[ :]*/i;
 const MCP_SERVER = path.join(__dirname, '..', 'mcp', 'server.mjs');
 const MCP_CONFIG_PATH = path.join(os.tmpdir(), 'relay-mcp-config.json');
+// cwd NEUTRO para o claude: evita que ele "veja" o projeto local (Mac) pelo
+// contexto de inicialização e confunda com o repo remoto (VDI). No modo agente
+// o acesso é SÓ pelas ferramentas MCP.
+const CLAUDE_CWD = path.join(os.tmpdir(), 'indioflechudo-claude-cwd');
+try { fs.mkdirSync(CLAUDE_CWD, { recursive: true }); } catch (_) {}
 const AGENT_TOOLS = ['mcp__relay-tools__list_dir', 'mcp__relay-tools__read_file', 'mcp__relay-tools__glob', 'mcp__relay-tools__grep', 'mcp__relay-tools__write_file', 'mcp__relay-tools__edit_file', 'mcp__relay-tools__run'];
 const AGENT_SYSTEM = SYSTEM_PROMPT + '\n\n' + [
   'Você está operando num REPOSITÓRIO REMOTO somente através das ferramentas MCP',
@@ -270,7 +275,7 @@ function execClaude(sessionArgs, prompt, opts = {}) {
     if (CLAUDE_MODEL) args.push('--model', CLAUDE_MODEL);
     args.push(...sessionArgs);
 
-    const child = spawn(CLAUDE_BIN, args, { stdio: ['pipe', 'pipe', 'pipe'], env: opts.env ? { ...process.env, ...opts.env } : process.env });
+    const child = spawn(CLAUDE_BIN, args, { cwd: CLAUDE_CWD, stdio: ['pipe', 'pipe', 'pipe'], env: opts.env ? { ...process.env, ...opts.env } : process.env });
     let out = '', err = '', done = false, lineBuf = '', resultEvt = null;
     const finish = (v) => { if (!done) { done = true; clearTimeout(to); resolve(v); } };
     const to = setTimeout(() => { try { child.kill('SIGKILL'); } catch (_) {} finish({ ok: false, error: 'timeout' }); }, opts.timeoutMs || CLAUDE_TIMEOUT_MS);
