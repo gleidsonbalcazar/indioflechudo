@@ -23,11 +23,24 @@ const http = require('http');
 const https = require('https');
 const tls = require('tls');
 
-const PROXY = process.argv[2] || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
-const RELAY = process.argv[3] || process.env.RELAY_URL || 'https://your-app.fly.dev';
+// Args: flags nomeadas (recomendado) ou posicionais (compat). Proxy é OPCIONAL.
+//   node corp-ping.js --relay https://... [--proxy http://host:8080]
+const VALUE_FLAGS = new Set(['relay', 'proxy']);
+const flags = {};
+const pos = [];
+const _av = process.argv.slice(2);
+for (let i = 0; i < _av.length; i++) {
+  const a = _av[i];
+  const m = a.match(/^--([a-z-]+)(?:=(.*))?$/i);
+  if (!m) { pos.push(a); continue; }
+  const k = m[1].toLowerCase();
+  if (VALUE_FLAGS.has(k)) { flags[k] = m[2] !== undefined ? m[2] : _av[++i]; continue; }
+}
+const PROXY = flags.proxy || pos[0] || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
+const RELAY = flags.relay || pos[1] || process.env.RELAY_URL || 'https://your-app.fly.dev';
 
-if (!PROXY) {
-  console.error('Faltou o proxy. Uso: node corp-ping.js http://seu-proxy:8080 [relayUrl]');
+if (!RELAY || /your-app\.fly\.dev/.test(RELAY)) {
+  console.error('Informe o relay. Uso: node corp-ping.js --relay https://SEU-APP.onrender.com [--proxy http://host:8080]');
   process.exit(1);
 }
 
@@ -75,15 +88,32 @@ async function getViaProxy(fullUrl) {
   });
 }
 
+// Conexão direta (sem proxy) — para redes/VDIs que alcançam o relay sem proxy.
+function getDirect(fullUrl) {
+  const url = new URL(fullUrl);
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      method: 'GET', host: url.hostname, port: url.port || 443,
+      path: url.pathname + url.search, headers: { 'User-Agent': 'corp-ping' }, timeout: 15000,
+    }, (res) => {
+      let data = ''; res.on('data', (d) => data += d);
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout na resposta HTTPS')); });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 (async () => {
-  console.log(`proxy : ${PROXY}`);
+  console.log(`proxy : ${PROXY || '(nenhum — conexão direta)'}`);
   console.log(`relay : ${RELAY}`);
   try {
-    const r = await getViaProxy(RELAY + '/e2ee-salt');
+    const r = PROXY ? await getViaProxy(RELAY + '/e2ee-salt') : await getDirect(RELAY + '/e2ee-salt');
     console.log(`\n✓ CONNECT ok — HTTP ${r.status}`);
     console.log('resposta:', r.body.slice(0, 200));
     if (r.status === 200 && r.body.includes('salt')) {
-      console.log('\n==> RESULTADO: Node atravessa o proxy. Podemos fazer o executor em Node.');
+      console.log('\n==> RESULTADO: o Node alcança o relay' + (PROXY ? ' pelo proxy' : ' direto') + '. Podemos rodar o executor em Node.');
     } else {
       console.log('\n==> Alcançou o relay, mas resposta inesperada — me mostre o output.');
     }

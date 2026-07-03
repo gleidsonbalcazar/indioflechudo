@@ -222,15 +222,15 @@ function onboardPage(base) {
   <h2>1 &middot; Testar a rede (sem dependências)</h2>
   <p>Verifica se o Node atravessa o proxy até o relay. Troque <code>SEU-PROXY:8080</code>.</p>
   <pre>curl.exe -o corp-ping.js ${base}/dl/corp-ping.js
-node corp-ping.js http://SEU-PROXY:8080</pre>
-  <div class="note">"CONNECT 200" + salt = OK. "CONNECT 407" = proxy exige login (NTLM), o caminho Node não passa. DNS/timeout = proxy/rede errados.</div>
+node corp-ping.js --relay ${base}</pre>
+  <div class="note">Atrás de proxy corporativo? Adicione <code>--proxy http://SEU-PROXY:8080</code>. Resposta com "salt" = OK. "CONNECT 407" = proxy exige login (NTLM). Timeout = rede/proxy.</div>
  </div>
  <div class="step">
   <h2>2 &middot; Rodar o conector (executor)</h2>
   <p>As "mãos" do agente no repositório. Use a <b>mesma senha</b> do login (ela deriva a chave E2EE). Ajuste o caminho do repo e o proxy.</p>
   <pre>curl.exe -o executor.js ${base}/dl/executor.js
-node --use-system-ca executor.js SUA_SENHA C:\\repo http://SEU-PROXY:8080 ${base}</pre>
-  <div class="note">O último argumento é a URL deste relay (já preenchida). Sem proxy corporativo? Troque <code>http://SEU-PROXY:8080</code> por <code>""</code>. Somente leitura por padrão — adicione <code>--write</code> e/ou <code>--run</code> para permitir edição/execução (com aprovação no chat).</div>
+node --use-system-ca executor.js --password SUA_SENHA --repo C:\\repo --relay ${base}</pre>
+  <div class="note">Proxy é opcional: atrás de proxy corporativo, adicione <code>--proxy http://SEU-PROXY:8080</code>. Somente leitura por padrão — adicione <code>--write</code> e/ou <code>--run</code> para o Claude editar/rodar (com aprovação no chat).</div>
  </div>
  <div class="step">
   <h2>Downloads diretos</h2>

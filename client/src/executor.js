@@ -9,10 +9,10 @@
  * Fatia 1 = SOMENTE LEITURA: list_dir, read_file, glob, grep. Nada de escrever
  * ou rodar comandos ainda.
  *
- * Uso (na máquina corporativa):
- *   node --use-system-ca executor.js <senha> <repoDir> [proxyUrl] [relayUrl]
- * Ex.:
- *   node --use-system-ca executor.js MinhaSenha@2026 C:\repo http://proxy:8080
+ * Uso (na máquina alvo) — flags nomeadas, proxy OPCIONAL:
+ *   node --use-system-ca executor.js --password X --repo C:\repo --relay https://... [--proxy http://host:8080] [--write] [--run]
+ * Sem proxy é só omitir --proxy. Posicional ainda funciona (compat):
+ *   node --use-system-ca executor.js <senha> <repoDir> [proxy] [relay]
  */
 
 const crypto = require('crypto');
@@ -24,27 +24,39 @@ const { spawn } = require('child_process');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const { io } = require('socket.io-client');
 
-// Posicionais ignoram flags (ex.: --write pode vir em qualquer posição).
-const ARGS = process.argv.slice(2).filter((a) => !a.startsWith('--'));
-const PASSWORD = ARGS[0] || process.env.RELAY_PASSWORD;
-const REPO_DIR = path.resolve(ARGS[1] || process.env.REPO_DIR || '.');
-const PROXY = ARGS[2] || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
-const RELAY = ARGS[3] || process.env.RELAY_URL || 'https://your-app.fly.dev';
+// Args: flags nomeadas (recomendado) + posicionais (compat). Proxy é OPCIONAL.
+const VALUE_FLAGS = new Set(['password', 'repo', 'relay', 'proxy']);
+const flags = {};
+const pos = [];
+const _av = process.argv.slice(2);
+for (let i = 0; i < _av.length; i++) {
+  const a = _av[i];
+  const m = a.match(/^--([a-z-]+)(?:=(.*))?$/i);
+  if (!m) { pos.push(a); continue; }
+  const k = m[1].toLowerCase();
+  if (k === 'write' || k === 'run') { flags[k] = true; continue; }
+  if (VALUE_FLAGS.has(k)) { flags[k] = m[2] !== undefined ? m[2] : _av[++i]; continue; }
+  // flag desconhecida: ignora (não consome o próximo token)
+}
+const PASSWORD = flags.password || pos[0] || process.env.RELAY_PASSWORD;
+const REPO_DIR = path.resolve(flags.repo || pos[1] || process.env.REPO_DIR || '.');
+const PROXY = flags.proxy || pos[2] || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
+const RELAY = flags.relay || pos[3] || process.env.RELAY_URL || 'https://your-app.fly.dev';
 const agent = PROXY ? new HttpsProxyAgent(PROXY) : undefined;
 
 const MAX_READ = 400 * 1024;     // cap por arquivo lido
 const MAX_HITS = 300;            // cap de resultados em grep/glob
 const IGNORE = new Set(['node_modules', '.git', 'bin', 'obj', '.vs', 'packages', 'dist']);
 // Escrita só é permitida se o executor subir com --write (ou AGENT_WRITE=1).
-const ALLOW_WRITE = process.argv.includes('--write') || /^(1|true|yes)$/i.test(process.env.AGENT_WRITE || '');
+const ALLOW_WRITE = !!flags.write || /^(1|true|yes)$/i.test(process.env.AGENT_WRITE || '');
 // Execução de comandos só com --run (ou AGENT_RUN=1). Allowlist do 1º token.
-const ALLOW_RUN = process.argv.includes('--run') || /^(1|true|yes)$/i.test(process.env.AGENT_RUN || '');
+const ALLOW_RUN = !!flags.run || /^(1|true|yes)$/i.test(process.env.AGENT_RUN || '');
 const RUN_ALLOWLIST = (process.env.RUN_ALLOW || 'dotnet,git,msbuild,nuget,sqlcmd,where,dir,type,findstr')
   .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 const RUN_TIMEOUT_MS = parseInt(process.env.RUN_TIMEOUT_MS || '120000', 10);
 const RUN_MAX_OUT = 100 * 1024;
 
-if (!PASSWORD) { console.error('Uso: node --use-system-ca executor.js <senha> <repoDir> [proxy] [relay]'); process.exit(1); }
+if (!PASSWORD) { console.error('Uso: node --use-system-ca executor.js --password <senha> --repo <dir> --relay <url> [--proxy <url>] [--write] [--run]'); process.exit(1); }
 
 function log(...a) { console.log(new Date().toISOString(), ...a); }
 
