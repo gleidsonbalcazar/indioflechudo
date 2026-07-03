@@ -1,0 +1,21 @@
+# Blueprint do Render — relay indioflechudo (Docker).
+# TLS e domínio (*.onrender.com) são providos pelo Render; o Caddy NÃO é usado aqui.
+# Postgres: use um externo (Neon free) e informe DATABASE_URL como secret.
+# Veja docs/DEPLOY-RENDER.md para o passo a passo.
+services:
+  - type: web
+    name: indioflechudo
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      # Secrets — preencha no dashboard do Render (não versionar):
+      - key: ACCESS_PASSWORD      # senha de login = semente da chave E2EE
+        sync: false
+      - key: DATABASE_URL         # string do Neon: postgres://...@...neon.tech/db?sslmode=require
+        sync: false
+      # Fixos:
+      - key: DATABASE_SSL         # Neon/managed exigem TLS
+        value: "1"
+      - key: TRUST_PROXY          # atrás do proxy do Render (X-Forwarded-For/Proto)
+        value: "1"

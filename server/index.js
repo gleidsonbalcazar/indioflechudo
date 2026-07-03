@@ -12,7 +12,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = 3000;
+// Porta: fixa 3000 local (Docker/Caddy), ou injetada pelo host (Render/PaaS).
+const PORT = process.env.PORT || 3000;
 const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000;
 // Limite generoso para acomodar overhead AES-GCM + base64 do FormData.
 // O front continua bloqueando arquivos > 10MB (plaintext).
@@ -146,6 +147,9 @@ function passwordMatches(input) {
   if (a.length !== b.length) { try { crypto.timingSafeEqual(b, b); } catch (_) {} return false; }
   return crypto.timingSafeEqual(a, b);
 }
+
+// Health check (Render/uptime pinger) — leve, não depende do DB.
+app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
